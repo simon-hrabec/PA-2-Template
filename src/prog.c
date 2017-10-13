@@ -19,7 +19,7 @@ int main(int argc, char const *argv[])
 	for(int i = 0; i < pointCount; i++){
 		if (scanf("%d", &pArr[i].x) != 1 ||
 			scanf("%d",&pArr[i].y) != 1) {
-			printf("Error loading numbers");
+			printf("Error loading numbers\n");
 			return 0;
 		}
 	}

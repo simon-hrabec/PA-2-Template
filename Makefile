@@ -7,11 +7,14 @@ bin/squares: src/prog.c
 	mkdir -p bin
 	$(CC) $(CFLAGS) src/prog.c -o bin/squares
 
-test:
-	@echo "No tests defined"
+.PHONY: test
+test: bin/squares
+	test/testscript.sh
 
+.PHONY: run
 run: bin/squares
 	./bin/squares
 
+.PHONY: clean
 clean:
 	rm -rf bin
