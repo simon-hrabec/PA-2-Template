@@ -13,7 +13,7 @@ failedTests=0
 
 for file in $testFiles
 do
-	./bin/squares < "$inputDir$file" > "$outputDir$file"
+	"$1" < "$inputDir$file" > "$outputDir$file"
 	if diff "$outputDir$file" "$expectedDir$file"
 	then
 		echo "Test $file passed"
