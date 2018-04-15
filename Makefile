@@ -7,13 +7,15 @@ LINKER   = g++ -o
 LFLAGS   = -std=c++14 -Wall -pedantic
 
 SRCDIR   = src
+HEADERDIR= headers
 OBJDIR   = obj
 BINDIR   = bin
+PROGDIR  = progtest-output
 
 RM       = rm -rf
 
 SOURCES  := $(wildcard $(SRCDIR)/*.cpp)
-INCLUDES := $(wildcard $(SRCDIR)/*.h)
+INCLUDES := $(wildcard $(HEADERDIR)/*.h)
 OBJECTS  := $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 
 TARGET = $(BINDIR)/$(TARGETNAME)
@@ -30,9 +32,18 @@ $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp
 	@$(CC) $(CFLAGS) -c $< -o $@
 	@echo "Compiled "$<" successfully!"
 
+progtest: $(PROGDIR)/progtest
+
+$(PROGDIR)/progtest:
+	@mkdir -p $(PROGDIR)
+	@cat $(INCLUDES) $(SOURCES) | grep -v '#include ".*"' > $@.cpp
+	@echo "Progtest-merged file generated"
+	@$(CC) $(CFLAGS) $@.cpp -o $@
+	@echo "Progtest-merged file successfully compiled"
+
 .PHONY: clean
 clean:
-	@$(RM) $(OBJDIR) $(BINDIR)
+	@$(RM) $(OBJDIR) $(BINDIR) $(PROGDIR)
 	@echo "Cleanup complete!"
 
 .PHONY: todo
