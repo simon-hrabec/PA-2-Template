@@ -1,4 +1,6 @@
-TARGETNAME   = prog
+TARGETNAME          = prog
+PROGTESTTARGETNAME  = progtest
+HEADERSORTTARGETNAME= headersort
 
 CC       = g++
 CFLAGS   = -std=c++14 -Wall -pedantic
@@ -6,11 +8,12 @@ CFLAGS   = -std=c++14 -Wall -pedantic
 LINKER   = g++ -o
 LFLAGS   = -std=c++14 -Wall -pedantic
 
-SRCDIR   = src
-HEADERDIR= headers
-OBJDIR   = obj
-BINDIR   = bin
-PROGDIR  = progtest-output
+SRCDIR    = src
+HEADERDIR = headers
+OBJDIR    = obj
+BINDIR    = bin
+PROGDIR   = progtest-output
+PROGSRCDIR= progtest-generator
 
 RM       = rm -rf
 
@@ -18,8 +21,15 @@ SOURCES  := $(wildcard $(SRCDIR)/*.cpp)
 INCLUDES := $(wildcard $(HEADERDIR)/*.h)
 OBJECTS  := $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 
-TARGET = $(BINDIR)/$(TARGETNAME)
+TARGET          = $(BINDIR)/$(TARGETNAME)
+PROGTESTTARGET  = $(PROGDIR)/$(PROGTESTTARGETNAME)
+HEADERSORTTARGET= $(PROGDIR)/$(HEADERSORTTARGETNAME)
 
+HEADERSORTSRC = $(PROGSRCDIR)/$(HEADERSORTTARGETNAME).cpp
+PROGTESTSRC = $(PROGTESTTARGET).cpp
+
+#----------------BASIC COMMANDS----------------
+.PHONY: all
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
@@ -32,19 +42,15 @@ $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp
 	@$(CC) $(CFLAGS) -c $< -o $@
 	@echo "Compiled "$<" successfully!"
 
-progtest: $(PROGDIR)/progtest
-
-$(PROGDIR)/progtest:
-	@mkdir -p $(PROGDIR)
-	@cat $(INCLUDES) $(SOURCES) | grep -v '#include ".*"' > $@.cpp
-	@echo "Progtest-merged file generated"
-	@$(CC) $(CFLAGS) $@.cpp -o $@
-	@echo "Progtest-merged file successfully compiled"
-
+#----------------HELPER COMMANDS----------------
 .PHONY: clean
 clean:
 	@$(RM) $(OBJDIR) $(BINDIR) $(PROGDIR)
 	@echo "Cleanup complete!"
+
+.PHONY: run
+run: $(TARGET)
+	$(TARGET)
 
 .PHONY: todo
 todo:
@@ -66,8 +72,27 @@ status: counttodo countwarnings
 
 .PHONY: test
 test: $(TARGET)
-	test/testscript.sh $(TARGET)
+	@test/testscript.sh $(TARGET)
 
-.PHONY: run
-run: $(TARGET)
-	$(TARGET)
+#----------------PROGTEST COMMANDS----------------
+.PHONY: progtest
+progtest: $(PROGTESTTARGET) testprogtest
+
+$(PROGTESTTARGET): $(HEADERSORTTARGET)
+	@mkdir -p $(PROGDIR)/temp
+	@grep -h 'include *<.*>' $(INCLUDES) $(SOURCES) | sort -u > $(PROGDIR)/temp/libheaderincludes
+	@echo $(INCLUDES) | $(HEADERSORTTARGET) | xargs grep -hv "^#include " > $(PROGDIR)/temp/sortedheaders
+	@grep -hv "^#include " $(SOURCES) > $(PROGDIR)/temp/sourcefiles
+
+	@cat $(PROGDIR)/temp/libheaderincludes $(PROGDIR)/temp/sortedheaders $(PROGDIR)/temp/sourcefiles > $(PROGTESTSRC)
+	@echo "Generated "$(PROGTESTSRC)" successfully!"
+	@$(CC) $(CFLAGS) $(PROGTESTSRC) -o $(PROGTESTTARGET)
+	@echo "Compiled "$(PROGTESTSRC)" successfully!"
+
+$(HEADERSORTTARGET): $(HEADERSORTSRC)
+	@mkdir -p $(PROGDIR)
+	@$(CC) $(CFLAGS) $< -o $@
+
+.PHONY: testprogtest
+testprogtest: $(PROGTESTTARGET)
+	@test/testscript.sh $(PROGTESTTARGET)
